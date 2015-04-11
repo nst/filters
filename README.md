@@ -1,5 +1,5 @@
 # filters
-Apply filters on iOS Camera.app JPG files imported with Image Capture.
+Restore filters on photos imported from iOS 8.
 
 ### Problem
 
