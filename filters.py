@@ -90,7 +90,6 @@ def main():
     args = parser.parse_args()
     
     aae_files = [ os.path.join(args.path, f) for f in os.listdir(args.path) if f.endswith('.AAE') ]
-    print aae_files
     
     for aae in aae_files:
         print "-- reading", aae
