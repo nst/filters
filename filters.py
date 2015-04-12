@@ -60,6 +60,11 @@ def apply_cifilter_with_name(filter_name, in_path, out_path):
     ci_image = CIImage.imageWithContentsOfURL_(url)
     assert ci_image
     
+    orientation = ci_image.properties().valueForKeyPath_("{TIFF}.Orientation")
+    if orientation != 1:
+        print "-- orientation:", orientation
+        ci_image = ci_image.imageByApplyingOrientation_(orientation)
+    
     ci_filter = CIFilter.filterWithName_(filter_name)
     assert ci_filter
     
