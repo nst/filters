@@ -46,10 +46,9 @@ def cifilter_name_for_aae_file(path):
 
 def apply_cifilter_with_name(filter_name, in_path, out_path):
     
-    print "-- in:", in_path
+    print "-- in: ", in_path
     print "-- out:", out_path
     
-    assert filter_name
     assert in_path
     assert out_path
     
@@ -61,7 +60,7 @@ def apply_cifilter_with_name(filter_name, in_path, out_path):
     assert ci_image
     
     orientation = ci_image.properties().valueForKeyPath_("{TIFF}.Orientation")
-    if orientation != 1:
+    if orientation != None and orientation != 1:
         print "-- orientation:", orientation
         ci_image = ci_image.imageByApplyingOrientation_(orientation)
     
@@ -94,7 +93,7 @@ def main():
     for aae in aae_files:
         print "-- reading", aae
         
-        filter_name = cifilter_name_for_aae_file("/Users/nst/Desktop/asd/IMG_4900.AAE")
+        filter_name = cifilter_name_for_aae_file(aae)
         print "-- filter:", filter_name
     
         name, ext = os.path.splitext(aae)
