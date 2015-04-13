@@ -35,13 +35,16 @@ def cifilter_name_for_aae_file(path):
     assert data
     
     adjustment_stack = ipaPASS.photoAdjustmentStackFromData_error_(data, None)
+    if not adjustment_stack:
+        print "-- no adjustment_stack"
+        return None
     assert adjustment_stack
     
     adjustments = adjustment_stack.adjustments()
-    assert adjustments
+    assert adjustments != None
     
     filter_names = ["CIPhotoEffect" + a.settings()["effectName"] for a in adjustments if a.identifier() == "Effect"]
-    
+
     return filter_names[0] if len(filter_names) else None
 
 def apply_cifilter_with_name(filter_name, in_path, out_path):
@@ -95,7 +98,10 @@ def main():
         
         filter_name = cifilter_name_for_aae_file(aae)
         print "-- filter:", filter_name
-    
+        
+        if not filter_name:
+            continue
+        
         name, ext = os.path.splitext(aae)
         jpg_in = name + ".JPG"
                 
