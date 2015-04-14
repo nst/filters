@@ -47,7 +47,7 @@ def cifilter_name_for_aae_file(path):
 
     return filter_names[0] if len(filter_names) else None
 
-def apply_cifilter_with_name(filter_name, in_path, out_path):
+def apply_cifilter_with_name(filter_name, in_path, out_path, dry_run=False):
     
     print "-- in: ", in_path
     print "-- out:", out_path
@@ -82,12 +82,17 @@ def apply_cifilter_with_name(filter_name, in_path, out_path):
     properties = { "NSImageCompressionFactor" : 0.9 }
     data = bitmap_rep.representationUsingType_properties_(3, properties) # 3 for JPEG
     
+    if dry_run:
+        print "-- dryrun, don't write", out_path
+        return
+    
     assert data.writeToFile_atomically_(out_path, True)
 
 def main():
 
     parser = argparse.ArgumentParser(description='Restore filters on photos imported from iOS 8 with Image Capture.')
     parser.add_argument("-o", "--overwrite", action='store_true', default=False, help="overwrite original photos with filtered photos")
+    parser.add_argument("-d", "--dryrun", action='store_true', default=False, help="don't write anything on disk")
     parser.add_argument("path", help="path to folder with JPG and AAC files")
     args = parser.parse_args()
     
@@ -108,10 +113,10 @@ def main():
         if not os.path.exists(jpg_in):
             print "-- missing file:", jpg_in
             continue
-            
+                
         jpg_out = jpg_in if args.overwrite else (name + "_" + filter_name + ".JPG")
         
-        apply_cifilter_with_name(filter_name, jpg_in, jpg_out)
+        apply_cifilter_with_name(filter_name, jpg_in, jpg_out, args.dryrun)
 
 if __name__=='__main__':
     main()
