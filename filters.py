@@ -28,26 +28,7 @@ assert IPAPhotoAdjustmentStackSerializer_v10 != None
         
 ipaPASS = IPAPhotoAdjustmentStackSerializer_v10.alloc().init()
 
-def cifilter_name_for_aae_file(path):
-    d = NSDictionary.dictionaryWithContentsOfFile_(path)
-    assert d
-    data = d["adjustmentData"]
-    assert data
-    
-    adjustment_stack = ipaPASS.photoAdjustmentStackFromData_error_(data, None)
-    if not adjustment_stack:
-        print "-- no adjustment_stack"
-        return None
-    assert adjustment_stack
-    
-    adjustments = adjustment_stack.adjustments()
-    assert adjustments != None
-    
-    filter_names = ["CIPhotoEffect" + a.settings()["effectName"] for a in adjustments if a.identifier() == "Effect"]
-
-    return filter_names[0] if len(filter_names) else None
-
-def apply_cifilter_with_name(filter_name, in_path, out_path, dry_run=False):
+def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_run=False):
     
     print "-- in: ", in_path
     print "-- out:", out_path
@@ -62,11 +43,11 @@ def apply_cifilter_with_name(filter_name, in_path, out_path, dry_run=False):
     ci_image = CIImage.imageWithContentsOfURL_(url)
     assert ci_image
     
-    orientation = ci_image.properties().valueForKeyPath_("{TIFF}.Orientation")
+    #orientation = ci_image.properties().valueForKeyPath_("{TIFF}.Orientation")
     if orientation != None and orientation != 1:
         print "-- orientation:", orientation
         ci_image = ci_image.imageByApplyingOrientation_(orientation)
-    
+        
     ci_filter = CIFilter.filterWithName_(filter_name)
     assert ci_filter
     
@@ -101,11 +82,20 @@ def main():
     for aae in aae_files:
         print "-- reading", aae
         
-        filter_name = cifilter_name_for_aae_file(aae)
-        print "-- filter:", filter_name
+        d1 = NSDictionary.dictionaryWithContentsOfFile_(aae)
+        data = d1["adjustmentData"]
         
-        if not filter_name:
+        d2 = ipaPASS.archiveFromData_error_(data, None)
+        
+        adjustments = d2["adjustments"]
+        orientation = d2["metadata"]["orientation"]
+        
+        effect_names = [ d["settings"]["effectName"] for d in d2["adjustments"] if d["identifier"] == "Effect" and "effectName" in d["settings"]]
+        if len(effect_names) == 0:
             continue
+        
+        filter_name = "CIPhotoEffect" + effect_names[0]
+        print "-- filter:", filter_name
         
         name, ext = os.path.splitext(aae)
         jpg_in = name + ".JPG"
@@ -116,7 +106,7 @@ def main():
                 
         jpg_out = jpg_in if args.overwrite else (name + "_" + filter_name + ".JPG")
         
-        apply_cifilter_with_name(filter_name, jpg_in, jpg_out, args.dryrun)
+        apply_cifilter_with_name(filter_name, orientation, jpg_in, jpg_out, args.dryrun)
 
 if __name__=='__main__':
     main()
