@@ -86,6 +86,9 @@ def main():
         data = d1["adjustmentData"]
         
         d2 = ipaPASS.archiveFromData_error_(data, None)
+        if not d2:
+            print "-- can't read data from", aae
+            continue
         
         adjustments = d2["adjustments"]
         orientation = d2["metadata"]["orientation"]
