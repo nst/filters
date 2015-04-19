@@ -8,10 +8,7 @@ import os
 
 from Foundation import NSBundle, NSClassFromString, NSDictionary, NSURL
 
-success = NSBundle.bundleWithPath_("/System/Library/PrivateFrameworks/PhotoLibraryPrivate.framework").load()
-assert success == True
-
-success = NSBundle.bundleWithPath_("/System/Library/Frameworks/QuartzCore.framework").load()
+success = NSBundle.bundleWithPath_("/System/Library/PrivateFrameworks/PhotoLibraryPrivate.framework/Versions/A/Frameworks/PAImaging.framework").load()
 assert success == True
 
 CIImage = NSClassFromString("CIImage")
@@ -23,9 +20,12 @@ assert CIFilter
 NSBitmapImageRep = NSClassFromString("NSBitmapImageRep")
 assert NSBitmapImageRep
 
+PFAssetAdjustments = NSClassFromString("PFAssetAdjustments")
+assert PFAssetAdjustments
+
 IPAPhotoAdjustmentStackSerializer_v10 = NSClassFromString("IPAPhotoAdjustmentStackSerializer_v10")
-assert IPAPhotoAdjustmentStackSerializer_v10 != None
-        
+assert IPAPhotoAdjustmentStackSerializer_v10
+
 ipaPASS = IPAPhotoAdjustmentStackSerializer_v10.alloc().init()
 
 def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_run=False):
@@ -69,8 +69,38 @@ def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_ru
     
     assert data.writeToFile_atomically_(out_path, True)
 
-def main():
+def read_aae_file(path):
 
+    d1 = NSDictionary.dictionaryWithContentsOfFile_(path)
+    
+    asset_adj = PFAssetAdjustments.alloc().initWithPropertyListDictionary_(d1)
+    assert asset_adj
+    
+    data = asset_adj.adjustmentData()
+    assert data
+    
+    d2 = ipaPASS.archiveFromData_error_(data, None)
+    print d2
+    
+    if not d2:
+        print "-- can't read data from", path
+        return None, None
+    
+    adjustments = d2["adjustments"]
+    orientation = d2["metadata"]["orientation"]
+    
+    effect_names = [ d["settings"]["effectName"] for d in d2["adjustments"] if d["identifier"] == "Effect" and "effectName" in d["settings"]]
+    if len(effect_names) == 0:
+        print "-- can't read effect from", path
+        return None, None
+    
+    filter_name = "CIPhotoEffect" + effect_names[0]
+    print "-- filter:", filter_name
+
+    return filter_name, orientation
+
+def main():
+    
     parser = argparse.ArgumentParser(description='Restore filters on photos imported from iOS 8 with Image Capture.')
     parser.add_argument("-o", "--overwrite", action='store_true', default=False, help="overwrite original photos with filtered photos")
     parser.add_argument("-d", "--dryrun", action='store_true', default=False, help="don't write anything on disk")
@@ -80,25 +110,12 @@ def main():
     aae_files = [ os.path.join(args.path, f) for f in os.listdir(args.path) if f.endswith('.AAE') ]
     
     for aae in aae_files:
+
         print "-- reading", aae
-        
-        d1 = NSDictionary.dictionaryWithContentsOfFile_(aae)
-        data = d1["adjustmentData"]
-        
-        d2 = ipaPASS.archiveFromData_error_(data, None)
-        if not d2:
-            print "-- can't read data from", aae
+
+        filter_name, orientation = read_aae_file(aae)
+        if not filter_name:
             continue
-        
-        adjustments = d2["adjustments"]
-        orientation = d2["metadata"]["orientation"]
-        
-        effect_names = [ d["settings"]["effectName"] for d in d2["adjustments"] if d["identifier"] == "Effect" and "effectName" in d["settings"]]
-        if len(effect_names) == 0:
-            continue
-        
-        filter_name = "CIPhotoEffect" + effect_names[0]
-        print "-- filter:", filter_name
         
         name, ext = os.path.splitext(aae)
         jpg_in = name + ".JPG"
