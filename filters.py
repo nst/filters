@@ -20,9 +20,6 @@ assert CIFilter
 NSBitmapImageRep = NSClassFromString("NSBitmapImageRep")
 assert NSBitmapImageRep
 
-PFAssetAdjustments = NSClassFromString("PFAssetAdjustments")
-assert PFAssetAdjustments
-
 IPAPhotoAdjustmentStackSerializer_v10 = NSClassFromString("IPAPhotoAdjustmentStackSerializer_v10")
 assert IPAPhotoAdjustmentStackSerializer_v10
 
@@ -43,7 +40,6 @@ def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_ru
     ci_image = CIImage.imageWithContentsOfURL_(url)
     assert ci_image
     
-    #orientation = ci_image.properties().valueForKeyPath_("{TIFF}.Orientation")
     if orientation != None and orientation != 1:
         print "-- orientation:", orientation
         ci_image = ci_image.imageByApplyingOrientation_(orientation)
@@ -71,28 +67,20 @@ def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_ru
 
 def read_aae_file(path):
 
-    d1 = NSDictionary.dictionaryWithContentsOfFile_(path)
+    plist = NSDictionary.dictionaryWithContentsOfFile_(path)
     
-    asset_adj = PFAssetAdjustments.alloc().initWithPropertyListDictionary_(d1)
-    assert asset_adj
-    
-    data = asset_adj.adjustmentData()
-    assert data
-    
-    d2 = ipaPASS.archiveFromData_error_(data, None)
-    print d2
-    
-    if not d2:
-        print "-- can't read data from", path
+    if plist["adjustmentFormatIdentifier"] != "com.apple.photo":
+        print "-- bad format identifier:", plist["adjustmentFormatIdentifier"]
         return None, None
     
-    adjustments = d2["adjustments"]
-    orientation = d2["metadata"]["orientation"]
+    data = plist["adjustmentData"]
     
-    effect_names = [ d["settings"]["effectName"] for d in d2["adjustments"] if d["identifier"] == "Effect" and "effectName" in d["settings"]]
-    if len(effect_names) == 0:
-        print "-- can't read effect from", path
-        return None, None
+    d = ipaPASS.archiveFromData_error_(data, None)
+    
+    adjustments = d["adjustments"]
+    orientation = d["metadata"]["orientation"]
+    
+    effect_names = [ d_["settings"]["effectName"] for d_ in d["adjustments"] if d_["identifier"] == "Effect"]
     
     filter_name = "CIPhotoEffect" + effect_names[0]
     print "-- filter:", filter_name
