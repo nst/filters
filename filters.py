@@ -5,6 +5,7 @@
 
 import argparse
 import os
+import time
 
 from Foundation import NSBundle, NSClassFromString, NSDictionary, NSURL
 
@@ -40,6 +41,9 @@ def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_ru
     ci_image = CIImage.imageWithContentsOfURL_(url)
     assert ci_image
     
+    in_creation_timestamp = os.path.getmtime(in_path)
+    print time.ctime(in_creation_timestamp)
+    
     if orientation != None and orientation != 1:
         print "-- orientation:", orientation
         ci_image = ci_image.imageByApplyingOrientation_(orientation)
@@ -64,6 +68,8 @@ def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_ru
         return
     
     assert data.writeToFile_atomically_(out_path, True)
+    
+    os.utime(out_path, (time.time(), in_creation_timestamp))
 
 def read_aae_file(path):
 
