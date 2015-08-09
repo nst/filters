@@ -88,6 +88,10 @@ def read_aae_file(path):
     
     effect_names = [ d_["settings"]["effectName"] for d_ in d["adjustments"] if d_["identifier"] == "Effect"]
     
+    if len(effect_names) == 0:
+        print "-- no effect name"
+        return None, None
+    
     filter_name = "CIPhotoEffect" + effect_names[0]
     print "-- filter:", filter_name
 
@@ -96,7 +100,7 @@ def read_aae_file(path):
 def main():
     
     parser = argparse.ArgumentParser(description='Restore filters on photos imported from iOS 8 with Image Capture.')
-    parser.add_argument("-o", "--overwrite", action='store_true', default=False, help="overwrite original photos with filtered photos")
+    parser.add_argument("-o", "--overwrite", action='store_true', default=False, help="overwrite original photos with filtered photos, remove AAE files")
     parser.add_argument("-d", "--dryrun", action='store_true', default=False, help="don't write anything on disk")
     parser.add_argument("path", help="path to folder with JPG and AAC files")
     args = parser.parse_args()
@@ -106,14 +110,18 @@ def main():
     for aae in aae_files:
 
         print "-- reading", aae
-
+		
         filter_name, orientation = read_aae_file(aae)
         if not filter_name:
             continue
         
         name, ext = os.path.splitext(aae)
         jpg_in = name + ".JPG"
-                
+        
+        if args.overwrite and not args.dryrun:
+    	    print "-- removing", aae
+            os.remove(aae)
+        
         if not os.path.exists(jpg_in):
             print "-- missing file:", jpg_in
             continue
@@ -121,6 +129,9 @@ def main():
         jpg_out = jpg_in if args.overwrite else (name + "_" + filter_name + ".JPG")
         
         apply_cifilter_with_name(filter_name, orientation, jpg_in, jpg_out, args.dryrun)
+
+        del(jpg_in)
+        del(jpg_out)
 
 if __name__=='__main__':
     main()
