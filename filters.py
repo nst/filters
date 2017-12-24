@@ -35,7 +35,8 @@ def apply_cifilter_with_name(filter_name, orientation, in_path, out_path, dry_ru
     assert out_path
     
     assert filter_name in ["CIPhotoEffectTonal", "CIPhotoEffectMono", "CIPhotoEffectInstant", "CIPhotoEffectTransfer",
-                           "CIPhotoEffectProcess", "CIPhotoEffectChrome", "CIPhotoEffectNoir", "CIPhotoEffectFade"]
+                           "CIPhotoEffectProcess", "CIPhotoEffectChrome", "CIPhotoEffectNoir", "CIPhotoEffectFade",
+                           "CIPhotoEffect3DDramatic", "CIPhotoEffect3DVivid", "CIPhotoEffect3DDramaticCool", "CIPhotoEffect3DNoir"]
                      
     url = NSURL.alloc().initFileURLWithPath_(in_path)
     ci_image = CIImage.imageWithContentsOfURL_(url)
